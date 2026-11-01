@@ -2,6 +2,7 @@ import ActivityKit
 import Foundation
 import Observation
 import UserNotifications
+import WidgetKit
 
 /// Owns the repeating 10-minute timer.
 ///
@@ -20,19 +21,18 @@ final class TimerEngine {
     /// and the queue is topped up every time the app opens.
     private static let roundsToSchedule = 48
 
-    private enum Keys {
-        static let anchor = "timer.anchor"
-        static let totalPlates = "meat.totalPlates"
-    }
+    private typealias Keys = SharedStore.Keys
 
     /// Start of round 1, or nil when stopped.
     private(set) var anchor: Date?
     private(set) var totalPlates: Int
 
-    private let defaults = UserDefaults.standard
+    /// App Group defaults, so the StandBy widget can read the timer too.
+    private let defaults = SharedStore.defaults
     private var rolloverTask: Task<Void, Never>?
 
     private init() {
+        SharedStore.migrateFromStandardDefaults()
         anchor = defaults.object(forKey: Keys.anchor) as? Date
         totalPlates = defaults.integer(forKey: Keys.totalPlates)
     }
@@ -103,7 +103,12 @@ final class TimerEngine {
         guard total != totalPlates else { return }
         totalPlates = total
         defaults.set(total, forKey: Keys.totalPlates)
+        reloadWidgets()
         if isRunning { await refreshLiveActivity() }
+    }
+
+    func reloadWidgets() {
+        WidgetCenter.shared.reloadTimelines(ofKind: SharedStore.orderTimerWidgetKind)
     }
 
     func requestNotificationPermission() async {
@@ -116,6 +121,7 @@ final class TimerEngine {
     private func setAnchor(_ date: Date?) {
         anchor = date
         defaults.set(date, forKey: Keys.anchor)
+        reloadWidgets()
     }
 
     private func pendingRoundIDs() async -> [String] {

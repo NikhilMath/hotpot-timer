@@ -8,9 +8,9 @@ Has a repeating 10-minute "order more on the tablet" timer with a Live Activity,
 | Folder | Target | What's inside |
 |---|---|---|
 | `HotpotTimer/` | App | App entry, `TimerEngine` (notifications + Live Activity), SwiftData models, views |
-| `HotpotWidget/` | Widget Extension | Live Activity UI (Lock Screen + Dynamic Island) |
-| `Shared/` | Both | `HotpotActivityAttributes`, `RestartTimerIntent`, `Theme` |
-| `Config/` | — | Info.plists (`NSSupportsLiveActivities = YES`) and entitlements (Time Sensitive) |
+| `HotpotWidget/` | Widget Extension | Live Activity UI (Lock Screen + Dynamic Island) and the StandBy / Home Screen widget |
+| `Shared/` | Both | `HotpotActivityAttributes`, `RestartTimerIntent`, `SharedStore` (App Group data), `Theme` |
+| `Config/` | — | Info.plists (`NSSupportsLiveActivities = YES`) and entitlements (App Group `group.com.nikhilmath.hotpottimer`; `HotpotTimer-Paid.entitlements` adds Time Sensitive) |
 
 The project uses Xcode folder-synced groups, so files you drop into these folders are picked up automatically.
 
@@ -25,8 +25,8 @@ The project uses Xcode folder-synced groups, so files you drop into these folder
    - Click the blue **HotpotTimer** project at the top of the navigator.
    - Select the **HotpotTimer** target, then **Signing & Capabilities**. Keep **Automatically manage signing** on and pick your Apple ID under **Team**. If you haven't added your account yet: **Xcode → Settings → Accounts → +**.
    - Select the **HotpotWidgetExtension** target and pick the **same Team**.
-   - If Xcode says the bundle ID is unavailable, change `com.nikhilmath.hotpottimer` to something unique in **both** targets. The widget's ID must stay the app's ID plus `.LiveActivity`.
-   - **Time Sensitive Notifications** needs a paid Apple Developer Program account, because free Personal Teams can't sign it. So it's unlinked by default. If you join the program, go to the app target's **Build Settings** and set **Code Signing Entitlements** to `Config/HotpotTimer.entitlements` to turn it back on. Without it, alerts still fire with sound. To get them through a Focus, add Hotpot Timer to that Focus's allowed apps (see below).
+   - If Xcode says the bundle ID is unavailable, change `com.nikhilmath.hotpottimer` to something unique in **both** targets. The widget's ID must stay the app's ID plus `.LiveActivity`. Also change the App Group name to match: it's in the three `Config/*.entitlements` files and in `SharedStore.appGroup`.
+   - **Time Sensitive Notifications** needs a paid Apple Developer Program account, because free Personal Teams can't sign it. So it's off by default. If you join the program, go to the app target's **Build Settings** and change **Code Signing Entitlements** to `Config/HotpotTimer-Paid.entitlements` to turn it on. Without it, alerts still fire with sound. To get them through a Focus, add Hotpot Timer to that Focus's allowed apps (see below).
 4. **Connect your iPhone** with a cable (or use the same Wi-Fi after the first pairing). Unlock it and tap **Trust**.
 5. **Turn on Developer Mode** on the phone: **Settings → Privacy & Security → Developer Mode → On**. The phone restarts.
 6. In Xcode's toolbar, choose the **HotpotTimer** scheme and **your iPhone** as the destination, then press **⌘R**.
@@ -70,3 +70,15 @@ The **Restart** button appears on the Watch notification too. Tapping it restart
 ## Table display (landscape)
 
 Turn the phone sideways to get a full-screen display for the table: a big next-order countdown on the left and the group plate total, people count and plates per person on the right. The screen stays awake while it's sideways. Rotate back to portrait to tap counters.
+
+## StandBy widget
+
+StandBy is the clock-style screen an iPhone shows when it's charging, locked and turned on its side.
+
+- **Live Activity:** while the timer runs, its countdown already shows in StandBy. Tap it to make it full-screen.
+- **Order Timer widget:** add it so the countdown and plate count are always on the StandBy screen:
+  1. Put the phone on a charger, lock it, and turn it sideways. If StandBy doesn't start, turn it on in **Settings → StandBy**.
+  2. Touch and hold the left or right widget stack, then unlock if asked.
+  3. Tap **+**, search for **Hotpot Timer**, choose **Order Timer**, and tap **Add Widget**. Then tap **Done**.
+
+  The widget shows the next-order countdown, the round number, the group total and plates per person. It has a ▶ / ↻ button that starts or restarts the timer. Every future round is scheduled into the widget ahead of time, so it moves to the next round by itself even when the app is closed. The same widget also works on the Home Screen.

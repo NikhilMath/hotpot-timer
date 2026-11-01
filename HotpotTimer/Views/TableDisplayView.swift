@@ -6,7 +6,7 @@ import UIKit
 /// can see the next-order countdown and the group's plate count.
 struct TableDisplayView: View {
     @Query(sort: \MeatType.sortOrder) private var meats: [MeatType]
-    @AppStorage("session.people") private var people = 1
+    @AppStorage(SharedStore.Keys.people, store: SharedStore.defaults) private var people = 1
     @State private var glow = false
 
     private let engine = TimerEngine.shared

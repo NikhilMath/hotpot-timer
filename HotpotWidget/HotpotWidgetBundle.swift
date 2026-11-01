@@ -5,5 +5,6 @@ import WidgetKit
 struct HotpotWidgetBundle: WidgetBundle {
     var body: some Widget {
         HotpotLiveActivity()
+        OrderTimerWidget()
     }
 }

@@ -9,7 +9,7 @@ struct MeatCounterSection: View {
     @State private var newName = ""
     @State private var newEmoji = ""
     @State private var confirmingNewSession = false
-    @AppStorage("session.people") private var people = 1
+    @AppStorage(SharedStore.Keys.people, store: SharedStore.defaults) private var people = 1
 
     private var total: Int { meats.reduce(0) { $0 + $1.count } }
     private var perPerson: Double { Double(total) / Double(max(1, people)) }
@@ -49,6 +49,9 @@ struct MeatCounterSection: View {
             .disabled(total == 0)
             .opacity(total == 0 ? 0.4 : 1)
             .padding(.top, 6)
+        }
+        .onChange(of: people) {
+            TimerEngine.shared.reloadWidgets()
         }
         .onChange(of: total, initial: true) { _, newTotal in
             Task { await TimerEngine.shared.setTotalPlates(newTotal) }
