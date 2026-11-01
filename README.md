@@ -1,7 +1,7 @@
 # 🍲 Hotpot Timer
 
 SwiftUI app for all-you-can-eat hotpot / yakiniku. iOS 17+.
-Has a repeating 10-minute "order more on the tablet" timer with a Live Activity, plus a meat plate counter with history.
+Has a repeating 10-minute "order up again" timer for the restaurant's ordering tablet, with a Live Activity and a StandBy widget, plus a group plate counter with history.
 
 ## Project layout
 
@@ -9,7 +9,7 @@ Has a repeating 10-minute "order more on the tablet" timer with a Live Activity,
 |---|---|---|
 | `HotpotTimer/` | App | App entry, `TimerEngine` (notifications + Live Activity), SwiftData models, views |
 | `HotpotWidget/` | Widget Extension | Live Activity UI (Lock Screen + Dynamic Island) and the StandBy / Home Screen widget |
-| `Shared/` | Both | `HotpotActivityAttributes`, `RestartTimerIntent`, `SharedStore` (App Group data), `Theme` |
+| `Shared/` | Both | `HotpotActivityAttributes`, `RestartTimerIntent`, `OrderTimerCore` (restart logic usable from the widget), `SharedStore` (App Group data), `Theme` |
 | `Config/` | — | Info.plists (`NSSupportsLiveActivities = YES`) and entitlements (App Group `group.com.nikhilmath.hotpottimer`; `HotpotTimer-Paid.entitlements` adds Time Sensitive) |
 
 The project uses Xcode folder-synced groups, so files you drop into these folders are picked up automatically.
@@ -60,16 +60,23 @@ The **Restart** button appears on the Watch notification too. Tapping it restart
 - **Limitation:** if a round ends while the app is fully in the background *and you don't interact*, the Live Activity can't move itself to the next round. iOS gives local apps no way to wake up then; only a push server could. It stops at 0:00 and shows "Time's up — order more! 📲". The notifications keep firing on schedule regardless. Opening the app or tapping any notification snaps the Live Activity to the current round.
 - Live Activities are ended by iOS after 8 hours (12 on the Lock Screen). Opening the app starts a fresh one if the timer is still running.
 
-## Meat counter
+## Plate counter
 
-- Big **+** / small **−** per meat, with haptics. Counts persist with SwiftData.
-- **Add type** creates a custom meat. Long-press a custom row to delete it.
-- **Save & Close Session** saves date, duration (from your first Start or first plate), total, and per-meat counts to **History** (🏆 button). Then it resets the counts and stops the timer, which cancels pending notifications and ends the Live Activity.
-- History highlights your personal record. Swipe a row to delete it.
+- One shared counter for the table: a big **+ 1 plate** button and a smaller **−**, with haptics. Which meat you ordered doesn't matter.
+- **人数 People** sets how many are eating. The total becomes the group total and shows plates per person.
+- The count is saved in the App Group, so it survives closing the app, and the widget and Live Activity show it.
+- **Save & Close Session** saves the date, duration (from your first Start or first plate), group total and people count to **History** (🏆 button). Then it resets the counter and stops the timer, which cancels pending notifications and ends the Live Activity.
+- History highlights your personal record (記録). Swipe a row to delete it.
 
 ## Table display (landscape)
 
-Turn the phone sideways to get a full-screen display for the table: a big next-order countdown on the left and the group plate total, people count and plates per person on the right. The screen stays awake while it's sideways. Rotate back to portrait to tap counters.
+Turn the phone sideways to get a full-screen display for the table: an "order up again" countdown with a **Restart** button on one side, and the group total with **+ 1 plate** / **−** on the other. The screen stays awake while it's sideways.
+
+To avoid OLED burn-in, the two halves swap sides every 3 minutes and the layout drifts slightly. Rotate back to portrait for People, History and Save & Close.
+
+## Look
+
+Japanese izakaya style: sumi-ink black, 朱 vermilion lacquer, gold-leaf hairlines and washi-paper text, with a faint 青海波 seigaiha wave pattern behind. Labels use Hiragino Mincho kanji: 注文 order, 合計 total, 人数 people, 記録 record, 食べ放題 all-you-can-eat. All colors and fonts live in `Shared/Theme.swift`.
 
 ## StandBy widget
 
@@ -81,4 +88,4 @@ StandBy is the clock-style screen an iPhone shows when it's charging, locked and
   2. Touch and hold the left or right widget stack, then unlock if asked.
   3. Tap **+**, search for **Hotpot Timer**, choose **Order Timer**, and tap **Add Widget**. Then tap **Done**.
 
-  The widget shows the next-order countdown, the round number, the group total and plates per person. It has a ▶ / ↻ button that starts or restarts the timer. Every future round is scheduled into the widget ahead of time, so it moves to the next round by itself even when the app is closed. The same widget also works on the Home Screen.
+  The widget shows the "order up" countdown, the group total and plates per person. It has a ▶ / ↻ button that starts or restarts the timer. Every future round is scheduled into the widget ahead of time, so it moves to the next round by itself even when the app is closed. The same widget also works on the Home Screen.

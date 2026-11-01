@@ -7,37 +7,37 @@ struct HotpotLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: HotpotActivityAttributes.self) { context in
             LockScreenView(state: context.state, isStale: context.isStale)
-                .activityBackgroundTint(Theme.ember.opacity(0.92))
-                .activitySystemActionForegroundColor(Theme.orange)
+                .activityBackgroundTint(Theme.sumi.opacity(0.92))
+                .activitySystemActionForegroundColor(Theme.gold)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("🍲 HOTPOT")
-                            .font(Theme.rounded(13, .bold))
-                            .foregroundStyle(Theme.orange)
-                        Text("Round \(context.state.round)")
-                            .font(Theme.rounded(15, .semibold))
-                            .foregroundStyle(.white.opacity(0.7))
+                        Text("注文 ORDER UP")
+                            .font(Theme.font(13, .bold))
+                            .foregroundStyle(Theme.gold)
+                        Text("again in")
+                            .font(Theme.font(15, .semibold))
+                            .foregroundStyle(Theme.washi.opacity(0.7))
                     }
                     .padding(.leading, 4)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     Text("🥩 \(context.state.platesText)")
-                        .font(Theme.rounded(15, .bold))
-                        .foregroundStyle(.white)
+                        .font(Theme.font(15, .bold))
+                        .foregroundStyle(Theme.washi)
                         .padding(.trailing, 4)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack(alignment: .center) {
                         VStack(alignment: .leading, spacing: 0) {
                             Countdown(state: context.state)
-                                .font(Theme.rounded(46))
-                                .foregroundStyle(Theme.flame)
+                                .font(Theme.font(46))
+                                .foregroundStyle(Theme.vermilion)
                             if context.isStale {
                                 Text("Order on the tablet! 📲")
-                                    .font(Theme.rounded(13, .semibold))
-                                    .foregroundStyle(.white.opacity(0.7))
+                                    .font(Theme.font(13, .semibold))
+                                    .foregroundStyle(Theme.washi.opacity(0.7))
                             }
                         }
                         Spacer()
@@ -49,16 +49,16 @@ struct HotpotLiveActivity: Widget {
                 Text("🍲")
             } compactTrailing: {
                 Countdown(state: context.state)
-                    .font(Theme.rounded(15, .bold))
-                    .foregroundStyle(Theme.orange)
+                    .font(Theme.font(15, .bold))
+                    .foregroundStyle(Theme.gold)
                     .frame(width: 44)
             } minimal: {
                 Countdown(state: context.state)
-                    .font(Theme.rounded(11, .bold))
-                    .foregroundStyle(Theme.orange)
+                    .font(Theme.font(11, .bold))
+                    .foregroundStyle(Theme.gold)
                     .minimumScaleFactor(0.6)
             }
-            .keylineTint(Theme.orange)
+            .keylineTint(Theme.gold)
         }
     }
 }
@@ -78,11 +78,11 @@ private struct RestartButton: View {
     var body: some View {
         Button(intent: RestartTimerIntent()) {
             Label("Restart", systemImage: "arrow.clockwise")
-                .font(Theme.rounded(17, .heavy))
-                .foregroundStyle(.white)
+                .font(Theme.font(17, .heavy))
+                .foregroundStyle(Theme.washi)
                 .padding(.horizontal, 18)
                 .padding(.vertical, 12)
-                .background(Theme.flame, in: Capsule())
+                .background(Theme.vermilion, in: Capsule())
         }
         .buttonStyle(.plain)
     }
@@ -95,15 +95,15 @@ private struct LockScreenView: View {
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("🍲 HOTPOT · ROUND \(state.round)")
-                    .font(Theme.rounded(13, .bold))
-                    .foregroundStyle(Theme.orange)
+                Text("注文 · ORDER UP AGAIN IN")
+                    .font(Theme.font(13, .bold))
+                    .foregroundStyle(Theme.gold)
                 Countdown(state: state)
-                    .font(Theme.rounded(48))
-                    .foregroundStyle(.white)
+                    .font(Theme.font(48))
+                    .foregroundStyle(Theme.washi)
                 Text(isStale ? "Time's up — order more! 📲" : "🥩 \(state.platesText)")
-                    .font(Theme.rounded(15, .semibold))
-                    .foregroundStyle(.white.opacity(0.75))
+                    .font(Theme.font(15, .semibold))
+                    .foregroundStyle(Theme.washi.opacity(0.75))
             }
             Spacer(minLength: 0)
             RestartButton()

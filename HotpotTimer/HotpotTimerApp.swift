@@ -10,6 +10,6 @@ struct HotpotTimerApp: App {
             ContentView()
                 .preferredColorScheme(.dark)
         }
-        .modelContainer(for: [MeatType.self, SessionRecord.self])
+        .modelContainer(for: SessionRecord.self)
     }
 }

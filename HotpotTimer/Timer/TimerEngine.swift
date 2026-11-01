@@ -2,24 +2,23 @@ import ActivityKit
 import Foundation
 import Observation
 import UserNotifications
-import WidgetKit
 
 /// Owns the repeating 10-minute timer.
 ///
 /// The timer is just an anchor date: round N ends at `anchor + N × 10 min`. Everything else
 /// (the on-screen countdown, pending notifications, the Live Activity) is derived from it,
 /// so nothing depends on the app staying alive in the background.
+///
+/// The anchor lives in the App Group, and the widget extension can restart the timer through
+/// `OrderTimerCore` while the app isn't running, so `sync()` re-reads it before doing anything.
 @MainActor
 @Observable
 final class TimerEngine {
     static let shared = TimerEngine()
 
-    static let roundLength: TimeInterval = 10 * 60
-    static let notificationCategory = "HOTPOT_ROUND"
-    static let restartActionID = "HOTPOT_RESTART"
-    /// iOS keeps at most 64 pending local notifications per app. 48 rounds = 8 hours of hotpot,
-    /// and the queue is topped up every time the app opens.
-    private static let roundsToSchedule = 48
+    static let roundLength = OrderTimerCore.roundLength
+    static let notificationCategory = OrderTimerCore.notificationCategory
+    static let restartActionID = OrderTimerCore.restartActionID
 
     private typealias Keys = SharedStore.Keys
 
@@ -27,14 +26,14 @@ final class TimerEngine {
     private(set) var anchor: Date?
     private(set) var totalPlates: Int
 
-    /// App Group defaults, so the StandBy widget can read the timer too.
+    /// App Group defaults, so the widgets can read the timer too.
     private let defaults = SharedStore.defaults
     private var rolloverTask: Task<Void, Never>?
 
     private init() {
         SharedStore.migrateFromStandardDefaults()
-        anchor = defaults.object(forKey: Keys.anchor) as? Date
-        totalPlates = defaults.integer(forKey: Keys.totalPlates)
+        anchor = SharedStore.anchor
+        totalPlates = SharedStore.totalPlates
     }
 
     var isRunning: Bool { anchor != nil }
@@ -43,15 +42,12 @@ final class TimerEngine {
 
     /// 0-based index of the round in progress at `date`.
     func roundIndex(at date: Date = .now) -> Int {
-        guard let anchor else { return 0 }
-        return max(0, Int(date.timeIntervalSince(anchor) / Self.roundLength))
+        currentRound(at: date).map { $0.number - 1 } ?? 0
     }
 
     func currentRound(at date: Date = .now) -> (start: Date, end: Date, number: Int)? {
         guard let anchor else { return nil }
-        let index = roundIndex(at: date)
-        let start = anchor.addingTimeInterval(Double(index) * Self.roundLength)
-        return (start, start.addingTimeInterval(Self.roundLength), index + 1)
+        return SharedStore.round(anchor: anchor, at: date, length: Self.roundLength)
     }
 
     func remaining(at date: Date = .now) -> TimeInterval {
@@ -71,44 +67,53 @@ final class TimerEngine {
 
     /// Countdown back to 10:00 from now; all pending notifications are replaced.
     func restart() async {
-        setAnchor(.now)
-        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
-        await scheduleNotifications()
+        let now = Date.now
+        anchor = now
+        await OrderTimerCore.restart(at: now)
         await refreshLiveActivity()
         scheduleRollover()
     }
 
     func stop() async {
-        setAnchor(nil)
+        anchor = nil
+        defaults.removeObject(forKey: Keys.anchor)
         rolloverTask?.cancel()
-        let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: await pendingRoundIDs())
-        center.removeAllDeliveredNotifications()
-        await endLiveActivities()
+        await OrderTimerCore.removePendingRounds()
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+        await OrderTimerCore.endLiveActivities()
+        OrderTimerCore.reloadWidgets()
     }
 
     /// Bring notifications and the Live Activity up to date with the current round.
     /// Called when the app opens, a round rolls over, or a notification is tapped.
     func sync() async {
-        guard isRunning else {
-            await endLiveActivities()
+        anchor = SharedStore.anchor
+        guard let anchor else {
+            rolloverTask?.cancel()
+            await OrderTimerCore.endLiveActivities()
             return
         }
-        await scheduleNotifications()
+        await OrderTimerCore.scheduleNotifications(anchor: anchor)
         await refreshLiveActivity()
         scheduleRollover()
     }
 
-    func setTotalPlates(_ total: Int) async {
+    /// The group's plate count; persisted in the App Group so widgets and the Live Activity see it.
+    func setTotalPlates(_ total: Int) {
+        let total = max(0, total)
         guard total != totalPlates else { return }
         totalPlates = total
         defaults.set(total, forKey: Keys.totalPlates)
         reloadWidgets()
-        if isRunning { await refreshLiveActivity() }
+        if isRunning { Task { await refreshLiveActivity() } }
+    }
+
+    func addPlates(_ delta: Int) {
+        setTotalPlates(totalPlates + delta)
     }
 
     func reloadWidgets() {
-        WidgetCenter.shared.reloadTimelines(ofKind: SharedStore.orderTimerWidgetKind)
+        OrderTimerCore.reloadWidgets()
     }
 
     func requestNotificationPermission() async {
@@ -117,48 +122,6 @@ final class TimerEngine {
     }
 
     // MARK: - Private
-
-    private func setAnchor(_ date: Date?) {
-        anchor = date
-        defaults.set(date, forKey: Keys.anchor)
-        reloadWidgets()
-    }
-
-    private func pendingRoundIDs() async -> [String] {
-        await UNUserNotificationCenter.current().pendingNotificationRequests()
-            .map(\.identifier)
-            .filter { $0.hasPrefix("hotpot.round.") }
-    }
-
-    private func scheduleNotifications() async {
-        let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: await pendingRoundIDs())
-
-        guard let anchor else { return }
-        let now = Date.now
-        let firstRoundEnding = roundIndex(at: now) + 1
-
-        for round in firstRoundEnding..<(firstRoundEnding + Self.roundsToSchedule) {
-            // A restart/stop happened while we were awaiting; that call owns the schedule now.
-            guard self.anchor == anchor else { return }
-
-            let fireDate = anchor.addingTimeInterval(Double(round) * Self.roundLength)
-            let content = UNMutableNotificationContent()
-            content.title = "Order time! 📲"
-            content.body = "10 minutes up — order more on the tablet! 🥩"
-            content.sound = .default
-            content.interruptionLevel = .timeSensitive
-            content.categoryIdentifier = Self.notificationCategory
-            content.threadIdentifier = "hotpot"
-
-            let trigger = UNTimeIntervalNotificationTrigger(
-                timeInterval: fireDate.timeIntervalSince(now),
-                repeats: false
-            )
-            let request = UNNotificationRequest(identifier: "hotpot.round.\(round)", content: content, trigger: trigger)
-            try? await center.add(request)
-        }
-    }
 
     /// While the app is in the foreground, move the Live Activity to the next round as each one ends.
     /// When the app is suspended this task simply pauses; `sync()` catches up on the next open.
@@ -173,39 +136,22 @@ final class TimerEngine {
         }
     }
 
+    /// Updates the running Live Activity, or starts one (only possible from the app).
     private func refreshLiveActivity() async {
-        guard let round = currentRound() else {
-            await endLiveActivities()
+        guard let anchor else {
+            await OrderTimerCore.endLiveActivities()
             return
         }
-        let state = HotpotActivityAttributes.ContentState(
-            roundStart: round.start,
-            roundEnd: round.end,
-            round: round.number,
-            totalPlates: totalPlates
-        )
-        // Marked stale when the round ends, so the widget can say "order now" if the
-        // app isn't around to roll it over.
-        let content = ActivityContent(state: state, staleDate: round.end)
-
-        let activities = Activity<HotpotActivityAttributes>.activities
-        if let current = activities.first {
-            await current.update(content)
-            for extra in activities.dropFirst() {
-                await extra.end(nil, dismissalPolicy: .immediate)
-            }
-        } else if ActivityAuthorizationInfo().areActivitiesEnabled {
-            do {
-                _ = try Activity.request(attributes: HotpotActivityAttributes(), content: content, pushType: nil)
-            } catch {
-                print("Live Activity request failed: \(error)")
-            }
-        }
-    }
-
-    private func endLiveActivities() async {
-        for activity in Activity<HotpotActivityAttributes>.activities {
-            await activity.end(nil, dismissalPolicy: .immediate)
+        if await OrderTimerCore.updateLiveActivities(anchor: anchor) { return }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        do {
+            _ = try Activity.request(
+                attributes: HotpotActivityAttributes(),
+                content: OrderTimerCore.liveActivityContent(anchor: anchor),
+                pushType: nil
+            )
+        } catch {
+            print("Live Activity request failed: \(error)")
         }
     }
 }

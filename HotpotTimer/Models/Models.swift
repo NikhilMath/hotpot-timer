@@ -2,37 +2,6 @@ import Foundation
 import SwiftData
 
 @Model
-final class MeatType {
-    var name: String
-    var emoji: String
-    var count: Int
-    var sortOrder: Int
-    var isCustom: Bool
-
-    init(name: String, emoji: String, sortOrder: Int, isCustom: Bool, count: Int = 0) {
-        self.name = name
-        self.emoji = emoji
-        self.count = count
-        self.sortOrder = sortOrder
-        self.isCustom = isCustom
-    }
-
-    static let builtIns: [(name: String, emoji: String)] = [
-        ("Beef", "🐄"),
-        ("Pork", "🐷"),
-        ("Chicken", "🐔"),
-        ("Lamb", "🐑"),
-        ("Seafood", "🦐"),
-    ]
-}
-
-struct MeatTally: Codable, Hashable {
-    var name: String
-    var emoji: String
-    var count: Int
-}
-
-@Model
 final class SessionRecord {
     var date: Date
     var duration: TimeInterval
@@ -40,19 +9,15 @@ final class SessionRecord {
     var total: Int
     /// Defaulted so sessions saved before this field existed migrate automatically.
     var people: Int = 1
-    /// JSON-encoded `[MeatTally]`; plain Data keeps the SwiftData schema simple.
-    var talliesData: Data
+    /// Per-meat breakdown from older versions. No longer written or shown; kept so
+    /// existing stores open without a migration.
+    var talliesData: Data = Data()
 
-    init(date: Date, duration: TimeInterval, total: Int, people: Int, tallies: [MeatTally]) {
+    init(date: Date, duration: TimeInterval, total: Int, people: Int) {
         self.date = date
         self.duration = duration
         self.total = total
         self.people = max(1, people)
-        self.talliesData = (try? JSONEncoder().encode(tallies)) ?? Data()
-    }
-
-    var tallies: [MeatTally] {
-        (try? JSONDecoder().decode([MeatTally].self, from: talliesData)) ?? []
     }
 
     var perPerson: Double { Double(total) / Double(max(1, people)) }

@@ -75,17 +75,17 @@ struct OrderTimerWidgetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top) {
-                Text(entry.roundStart == nil ? "READY" : "NEXT ORDER")
-                    .font(Theme.rounded(12, .bold))
+                Text(entry.roundStart == nil ? "注文 READY" : "注文 ORDER UP")
+                    .font(Theme.font(12, .bold))
                     .tracking(1.5)
-                    .foregroundStyle(Theme.orange)
+                    .foregroundStyle(Theme.gold)
                 Spacer(minLength: 4)
                 Button(intent: RestartTimerIntent()) {
                     Image(systemName: entry.roundStart == nil ? "play.fill" : "arrow.clockwise")
                         .font(.system(size: 13, weight: .heavy))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.washi)
                         .frame(width: 30, height: 30)
-                        .background(Theme.flame, in: Circle())
+                        .background(Theme.vermilion, in: Circle())
                 }
                 .buttonStyle(.plain)
             }
@@ -97,39 +97,39 @@ struct OrderTimerWidgetView: View {
                     Text("10:00")
                 }
             }
-            .font(Theme.rounded(42))
+            .font(Theme.font(42))
             .monospacedDigit()
-            .foregroundStyle(.white)
+            .foregroundStyle(Theme.washi)
             .lineLimit(1)
             .minimumScaleFactor(0.6)
 
-            Text(entry.roundStart == nil ? "📲 tap ▶ to start" : "📲 round \(entry.round)")
-                .font(Theme.rounded(11, .semibold))
-                .foregroundStyle(.white.opacity(0.55))
+            Text(entry.roundStart == nil ? "📲 tap ▶ to start" : "📲 again on the tablet")
+                .font(Theme.font(11, .semibold))
+                .foregroundStyle(Theme.washi.opacity(0.55))
 
             Spacer(minLength: 2)
 
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text("\(entry.totalPlates)")
-                    .font(Theme.rounded(30, .black))
+                    .font(Theme.font(30, .black))
                     .monospacedDigit()
-                    .foregroundStyle(Theme.flame)
+                    .foregroundStyle(Theme.vermilion)
                 Text(entry.totalPlates == 1 ? "plate 🥩" : "plates 🥩")
-                    .font(Theme.rounded(13, .bold))
-                    .foregroundStyle(.white.opacity(0.75))
+                    .font(Theme.font(13, .bold))
+                    .foregroundStyle(Theme.washi.opacity(0.75))
             }
             if entry.people > 1 {
                 Text("👥 \(entry.people) · \(entry.perPerson.formatted(.number.precision(.fractionLength(0...1)))) each")
-                    .font(Theme.rounded(11, .semibold))
-                    .foregroundStyle(.white.opacity(0.6))
+                    .font(Theme.font(11, .semibold))
+                    .foregroundStyle(Theme.washi.opacity(0.6))
             }
         }
         .padding(showsBackground ? 0 : 4)
         .containerBackground(for: .widget) {
             ZStack {
-                Theme.ember
+                Theme.sumi
                 RadialGradient(
-                    colors: [Theme.red.opacity(0.45), .clear],
+                    colors: [Theme.shu.opacity(0.45), .clear],
                     center: .bottomTrailing,
                     startRadius: 4,
                     endRadius: 170

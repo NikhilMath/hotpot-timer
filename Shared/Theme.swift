@@ -1,26 +1,42 @@
 import SwiftUI
 
+/// Japanese izakaya look: sumi-ink black, vermilion (朱 shu) lacquer, gold leaf and washi paper.
 enum Theme {
-    static let orange = Color(red: 1.00, green: 0.56, blue: 0.10)
-    static let red = Color(red: 0.93, green: 0.22, blue: 0.12)
-    static let ember = Color(red: 0.09, green: 0.05, blue: 0.04)
+    /// 朱 vermilion, torii-gate red.
+    static let shu = Color(red: 0.86, green: 0.25, blue: 0.16)
+    /// 紅 deep crimson.
+    static let beni = Color(red: 0.62, green: 0.10, blue: 0.13)
+    /// 金 gold leaf, for labels and hairlines.
+    static let gold = Color(red: 0.84, green: 0.69, blue: 0.40)
+    /// 和紙 washi paper, for text.
+    static let washi = Color(red: 0.96, green: 0.93, blue: 0.87)
+    /// 墨 sumi ink.
+    static let sumi = Color(red: 0.075, green: 0.066, blue: 0.062)
 
-    static let flame = LinearGradient(
-        colors: [Color(red: 1.00, green: 0.70, blue: 0.15), orange, red],
+    /// Lacquerware red: buttons, big numbers, the countdown ring.
+    static let vermilion = LinearGradient(
+        colors: [Color(red: 0.94, green: 0.38, blue: 0.22), shu, beni],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
     static let background = LinearGradient(
-        colors: [Color(red: 0.16, green: 0.06, blue: 0.03), ember, .black],
+        colors: [Color(red: 0.13, green: 0.10, blue: 0.09), sumi, .black],
         startPoint: .top,
         endPoint: .bottom
     )
 
-    static let card = Color.white.opacity(0.07)
-    static let cardStroke = Color.white.opacity(0.08)
+    static let card = washi.opacity(0.045)
+    static let cardStroke = gold.opacity(0.22)
+    static let cornerRadius: CGFloat = 14
 
-    static func rounded(_ size: CGFloat, _ weight: Font.Weight = .heavy) -> Font {
-        .system(size: size, weight: weight, design: .rounded)
+    /// Serif (New York) for Latin text and numbers; reads like Mincho next to the kanji.
+    static func font(_ size: CGFloat, _ weight: Font.Weight = .heavy) -> Font {
+        .system(size: size, weight: weight, design: .serif)
+    }
+
+    /// Hiragino Mincho for kanji labels.
+    static func mincho(_ size: CGFloat) -> Font {
+        .custom("HiraMinProN-W6", size: size)
     }
 }

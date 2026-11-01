@@ -33,15 +33,15 @@ struct HistoryView: View {
             } header: {
                 if !sessions.isEmpty {
                     Text("Past sessions")
-                        .font(Theme.rounded(15, .bold))
-                        .foregroundStyle(Theme.orange)
+                        .font(Theme.font(15, .bold))
+                        .foregroundStyle(Theme.gold)
                 }
             }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .padding(.horizontal, 16)
-        .background(Theme.background.ignoresSafeArea())
+        .background(JapaneseBackground())
         .navigationTitle("History")
         .overlay {
             if sessions.isEmpty {
@@ -56,26 +56,26 @@ struct HistoryView: View {
 
     private func recordBanner(_ record: SessionRecord) -> some View {
         VStack(spacing: 4) {
-            Text("🏆 PERSONAL RECORD")
-                .font(Theme.rounded(15, .bold))
+            Text("記録 · PERSONAL RECORD")
+                .font(Theme.font(15, .bold))
                 .tracking(2)
             Text("\(record.total)")
-                .font(Theme.rounded(80, .black))
+                .font(Theme.font(80, .black))
                 .monospacedDigit()
             Text("plates · \(record.date.formatted(date: .abbreviated, time: .omitted))")
-                .font(Theme.rounded(16, .semibold))
+                .font(Theme.font(16, .semibold))
                 .opacity(0.85)
             if record.people > 1 {
                 Text("👥 \(record.people) people · \(record.perPerson.platesString) each")
-                    .font(Theme.rounded(15, .semibold))
+                    .font(Theme.font(15, .semibold))
                     .opacity(0.85)
             }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Theme.washi)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 22)
-        .background(Theme.flame, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .shadow(color: Theme.red.opacity(0.45), radius: 16, y: 6)
+        .background(Theme.vermilion, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
+        .shadow(color: Theme.shu.opacity(0.45), radius: 16, y: 6)
         .padding(.vertical, 8)
     }
 }
@@ -89,51 +89,28 @@ private struct SessionRow: View {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(session.date.formatted(date: .abbreviated, time: .shortened))
-                        .font(Theme.rounded(17, .bold))
+                        .font(Theme.font(17, .bold))
                     Text("⏱ \(session.duration.hotpotDuration) · 👥 \(session.people) · \(session.perPerson.platesString)/person")
-                        .font(Theme.rounded(14, .medium))
-                        .foregroundStyle(.white.opacity(0.55))
+                        .font(Theme.font(14, .medium))
+                        .foregroundStyle(Theme.washi.opacity(0.55))
                 }
                 Spacer()
                 if isRecord {
                     Text("🏆").font(.title2)
                 }
                 Text("\(session.total)")
-                    .font(Theme.rounded(40))
+                    .font(Theme.font(40))
                     .monospacedDigit()
-                    .foregroundStyle(isRecord ? AnyShapeStyle(Theme.flame) : AnyShapeStyle(.white))
+                    .foregroundStyle(isRecord ? AnyShapeStyle(Theme.vermilion) : AnyShapeStyle(Theme.washi))
             }
 
-            let tallies = session.tallies
-            if !tallies.isEmpty {
-                FlowChips(tallies: tallies)
-            }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Theme.washi)
         .padding(16)
-        .background(Theme.card, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .strokeBorder(isRecord ? AnyShapeStyle(Theme.flame) : AnyShapeStyle(Theme.cardStroke), lineWidth: isRecord ? 2 : 1)
+            RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
+                .strokeBorder(isRecord ? AnyShapeStyle(Theme.vermilion) : AnyShapeStyle(Theme.cardStroke), lineWidth: isRecord ? 2 : 1)
         )
-    }
-}
-
-private struct FlowChips: View {
-    let tallies: [MeatTally]
-
-    var body: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 8) {
-                ForEach(tallies, id: \.self) { tally in
-                    Text("\(tally.emoji) \(tally.name) \(tally.count)")
-                        .font(Theme.rounded(14, .semibold))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.08), in: Capsule())
-                }
-            }
-        }
-        .scrollIndicators(.hidden)
     }
 }
